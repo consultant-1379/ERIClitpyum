@@ -1,0 +1,9 @@
+runLitpScript 2_node_cluster_setup.inc
+
+litp create -t yum-repository -p /software/items/yum1 -o name='yum1' base_url='http://path/to/yum1'
+litp create -t yum-repository -p /software/items/yum2 -o name='yum1' base_url='http://path/to/yum2'
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum1 -s /software/items/yum1
+litp create_plan
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum2 -s /software/items/yum2
+assertError create_plan

@@ -1,0 +1,28 @@
+runLitpScript 2_node_cluster_setup.inc
+
+# AT created for bug LITPCDS-12038
+
+litp create -t yum-repository -p /software/items/yum1 -o name='yum1' base_url='http://path/to/yum1'
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum1 -s /software/items/yum1
+
+litp create_plan
+litp run_plan
+
+assertPlanLength 1
+
+litp update -p /software/items/yum1 -o base_url='http://path/todifferent/yum1'
+litp create_plan
+litp run_plan
+
+assertPlanLength 2
+
+assertTask 0 yumrepo node1 /deployments/local/clusters/cluster1/nodes/node1/items/yum1 Success
+assertTask 1 _clean_metadata_callback node1 /deployments/local/clusters/cluster1/nodes/node1/items/yum1 Success
+
+litp update -p /software/items/yum1 -o cache_metadata=true
+litp create_plan
+litp run_plan
+
+assertPlanLength 1
+

@@ -1,0 +1,27 @@
+runLitpScript 2_node_cluster_setup.inc
+
+litp create -t yum-repository -p /software/items/yum1 -o name='yum1' base_url='http://path/to/yum1'
+litp create -t yum-repository -p /software/items/yum2 -o name='yum2' base_url='http://path/to/yum2'
+
+litp inherit -p /ms/items/yum1 -s /software/items/yum1
+litp inherit -p /ms/items/yum2 -s /software/items/yum2
+litp create_plan
+litp run_plan
+
+assertFileContents puppet/ms1_yum_repos.at.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+litp create -p /software/items/ms_pkg1 -t mock-package -o name='mock-package.rpm' 
+litp inherit -p /ms/items/ms_pkg1 -s /software/items/ms_pkg1 
+litp create_plan 
+litp run_plan 
+
+assertFileContents puppet/ms1_yum_repos_pkg.at.pp /opt/ericsson/nms/litp/etc/puppet/manifests/plugins/ms1.pp
+
+litp remove -p /ms/items/yum2
+litp remove -p /software/items/yum2 
+litp create_plan 
+
+assertTask 0 notify ms1 /ms/items/yum2 Initial
+assertCleanupTask 1 /software/items/yum2 Initial
+
+litp run_plan 

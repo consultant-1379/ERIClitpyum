@@ -1,0 +1,21 @@
+# 1. Verify that when users run litp create_plan and there were updates in a local repo
+# (whose ms_url_path is specified), the checksum property of the related repo gets updated
+# with the md5 of repomd.xml.
+
+runLitpScript ../2_node_cluster_setup.inc
+# TC 1: positive test
+litp create -t yum-repository -p /software/items/yum3 -o name='yum3' ms_url_path="/ms/path/to/yum3"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum3 -s /software/items/yum3
+litp create_plan
+litp run_plan
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum3  -o checksum="8d777f385d3dfec8815d20f7496026dc"
+assertState -p /deployments/local/clusters/cluster1/nodes/node1/items/yum3 Applied
+
+# TC 2: checksum can't be generated (negative test)
+let __err_case_1 --err_type ValidationError --err_message 'The yum repository referenced by property ms_url_path "/ms/path/to/yum99" is not accessible. It is not possible to determine if the repository has been updated.'
+litp create -t yum-repository -p /software/items/yum99 -o name='yum99' ms_url_path="/ms/path/to/yum99"
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum99 -s /software/items/yum99
+assertError __err_case_1 create_plan
+
+
+

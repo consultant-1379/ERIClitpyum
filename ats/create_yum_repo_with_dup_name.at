@@ -1,0 +1,46 @@
+# 01. CREATE 2 YUM-REPOSITORY WITH A DUPLICATE NAME PROPERTY
+
+runLitpScript 2_node_cluster_setup.inc
+
+litp create -t yum-repository -p /software/items/yum1 -o name='yum1' base_url='http://path/to/yum1'
+litp create -t yum-repository -p /software/items/yum2 -o name='yum1' base_url='http://path/to/yum1'
+litp create -t yum-repository -p /software/items/yum3 -o name='yum3' ms_url_path="/ms/path/to/yum3"
+litp create -t yum-repository -p /software/items/yum4 -o name='yum1' base_url='http://path/to/yum1'
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum1 -s /software/items/yum1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum2 -s /software/items/yum2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum3 -s /software/items/yum4
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum4 -s /software/items/yum3
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum5 -s /software/items/yum3
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum6 -s /software/items/yum3
+
+let __err_1 --err_type ValidationError --err_message 'Create plan failed: The property "name" with value "yum1" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum1"
+let __err_2 --err_type ValidationError --err_message 'Create plan failed: The property "name" with value "yum1" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum2"
+let __err_3 --err_type ValidationError --err_message 'Create plan failed: The property "name" with value "yum1" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum3"
+
+let __err_4 --err_type ValidationError --err_message 'Create plan failed: The property "base_url" with value "http://path/to/yum1" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum1"
+let __err_5 --err_type ValidationError --err_message 'Create plan failed: The property "base_url" with value "http://path/to/yum1" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum2"
+let __err_6 --err_type ValidationError --err_message 'Create plan failed: The property "base_url" with value "http://path/to/yum1" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum3"
+
+let __err_7 --err_type ValidationError --err_message 'Create plan failed: The property "name" with value "yum3" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum4"
+let __err_8 --err_type ValidationError --err_message 'Create plan failed: The property "name" with value "yum3" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum5"
+let __err_9 --err_type ValidationError --err_message 'Create plan failed: The property "name" with value "yum3" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum6"
+
+let __err_10 --err_type ValidationError --err_message 'Create plan failed: The property "ms_url_path" with value "/ms/path/to/yum3" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum4"
+let __err_11 --err_type ValidationError --err_message 'Create plan failed: The property "ms_url_path" with value "/ms/path/to/yum3" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum5"
+let __err_12 --err_type ValidationError --err_message 'Create plan failed: The property "ms_url_path" with value "/ms/path/to/yum3" must be unique per node' \
+--err_vpath "/deployments/local/clusters/cluster1/nodes/node1/items/yum6"
+
+assertError __err_1 __err_2 __err_3 __err_4 __err_5 __err_6 __err_7 __err_8 __err_9 __err_10 __err_11 __err_12 --errors_length 12 create_plan

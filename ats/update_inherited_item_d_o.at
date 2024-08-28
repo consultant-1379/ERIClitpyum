@@ -1,0 +1,49 @@
+runLitpScript 2_node_cluster_setup.inc
+
+litp create -t yum-repository -p /software/items/yum1 -o name="yum1" base_url="http://path/to/yum1"
+litp create -t yum-repository -p /software/items/yum2 -o name="yum2" base_url="http://path/to/yum2"
+litp create -t yum-repository -p /software/items/yum3 -o name="yum3" base_url="http://path/to/yum3"
+litp create -t yum-repository -p /software/items/yum4 -o name="yum4" base_url="http://path/to/yum4"
+litp create -t yum-repository -p /software/items/yum5 -o name="yum5"
+
+assertError --err_message='Only one of "ms_url_path" or "base_url" property must be set.' create -t yum-repository -p /software/items/yum6 -o name="yum6" base_url="http://path/to/yum6" ms_url_path="/ms/path/to/yum6"
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum1 -s /software/items/yum1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum2 -s /software/items/yum2
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum3 -s /software/items/yum3
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum4 -s /software/items/yum4
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum5 -s /software/items/yum5
+
+#validate that the inherited must have one of the required properties
+assertError --err_vpath=/deployments/local/clusters/cluster1/nodes/node1/items/yum5 --errors_length=1 --err_message='One of base_url or ms_url_path property must be set.' create_plan
+
+#switch mutually exclusive properties on an item with no default set
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum5 -o ms_url_path="/ms/path/to/yum5"
+
+litp create_plan
+litp run_plan
+
+#standard override
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum1 -o base_url="http://updated/path/to/yum1"
+
+#standard update and cascade
+litp update -p /software/items/yum2 -o base_url="http://updated/path/to/yum2"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum2 -o base_url="http://updated/path/to/yum2"
+
+#switch mutually exclusive properties
+litp update -p /software/items/yum3 -d base_url -o ms_url_path="/ms/path/to/yum3"
+assertProperty /deployments/local/clusters/cluster1/nodes/node1/items/yum3 -o ms_url_path="/ms/path/to/yum3"
+
+#add non-inherited mutually exclusive property on inherited item
+assertError --err_message='Only one of "ms_url_path" or "base_url" property must be set.' update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum4 -o ms_url_path="/ms/path/to/yum4"
+
+#switch mutually exclusive properties on inherited item
+assertError --err_message='Only one of "ms_url_path" or "base_url" property must be set.' update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum4 -d base_url -o ms_url_path="/ms/path/to/yum4"
+
+#as per LITPCDS-100058, this scenario should work but conflicts with the previous -d -o test above - also see LITPCDS-1780
+#litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum5 -d ms_url_path -o base_url="http://path/to/yum5"
+assertError --err_message='Only one of "ms_url_path" or "base_url" property must be set.' update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum5 -d ms_url_path -o base_url="http://path/to/yum5"
+
+litp create_plan
+litp run_plan
+

@@ -1,0 +1,26 @@
+runLitpScript 2_node_cluster_setup.inc
+
+# AT created for bug LITPCDS-8749
+
+litp create -t yum-repository -p /software/items/yum1 -o name='yum1' base_url='http://path/to/yum1'
+
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/yum1 -s /software/items/yum1
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node2/items/yum1 -s /software/items/yum1
+litp update -p /deployments/local/clusters/cluster1/nodes/node1/items/yum1 -o base_url='http://override/path/to/yum2'
+
+#create a task to fail - no significance other than failing
+litp create -p /software/items/foo -t mock-package -o name=foo
+litp inherit -p /deployments/local/clusters/cluster1/nodes/node1/items/foo -s /software/items/foo
+
+litp create_plan
+failConfigTask package node1 /deployments/local/clusters/cluster1/nodes/node1/items/foo
+litp run_plan
+
+litp update -p /software/items/yum1 -o base_url='http://path/todifferent/yum1'
+litp create_plan
+litp run_plan
+
+assertNotOverridden -p /deployments/local/clusters/cluster1/nodes/node2/items/yum1 -o base_url
+assertNoConfigTask node1 yumrepo yum1 /deployments/local/clusters/cluster1/nodes/node1/items/yum1
+assertTask 0 yumrepo node2 /deployments/local/clusters/cluster1/nodes/node2/items/yum1 Success
+assertTask 0 package node1 /deployments/local/clusters/cluster1/nodes/node1/items/foo Success
